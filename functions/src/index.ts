@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
+import * as moment from 'moment';
 
 admin.initializeApp(functions.config().firebase);
 
@@ -58,9 +59,14 @@ app.post('/games', async (request, response) => {
       return;
     }
     const players: Array<Object> = request.body.players;
+    const CurrentDateUnixTimestamp = moment().unix();
     const playersWithScores = players.map(x => {
       if (x && x.toString().length > 2 && x.toString().length < 20) {
-        return { name: x.toString().trim(), scores: [0] };
+        return {
+          name: x.toString().trim(),
+          scores: [0],
+          roundTimeStamp: [moment.unix(CurrentDateUnixTimestamp).format('LLL')]
+        };
       } else {
         response
           .status(400)
@@ -122,6 +128,7 @@ app.put('/games/:id', async (request, response) => {
     let scores: Array<number> = request.body.scores;
     let gamePlayers: Array<any> = [];
     let name: string = '';
+    const CurrentDateUnixTimestamp = moment().unix();
 
     if (!gameId) throw new Error('Id is required.');
 
@@ -151,6 +158,10 @@ app.put('/games/:id', async (request, response) => {
 
     scores.map((x, i) => {
       gamePlayers[i].scores = [...gamePlayers[i].scores, x];
+    });
+
+    gamePlayers.map((player) => {
+      player.roundTimeStamp = [...player.roundTimeStamp, moment.unix(CurrentDateUnixTimestamp).format('LLL')]
     });
 
     const data = {
